@@ -1,5 +1,10 @@
 # S2 Recovery Tools for Microsoft Word
 
+<!--PAGES_LINK_BANNER-->
+> 🌐 **Live page:** [https://socrtwo.github.io/wordrecovery-SF/](https://socrtwo.github.io/wordrecovery-SF/)  
+> 📦 **Releases:** [github.com/socrtwo/wordrecovery-SF/releases](https://github.com/socrtwo/wordrecovery-SF/releases)
+<!--/PAGES_LINK_BANNER-->
+
 Provides buttons for all Microsoft-recommended Word document recovery methods plus 5 independent techniques. Includes previous-version recovery and temporary/deleted file finder.
 
 ## Screenshots
