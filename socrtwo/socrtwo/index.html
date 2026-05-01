@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0322">
+<meta name="description" content="Recover text from damaged or deleted Microsoft Word documents. Works fully offline in your browser.">
+<title>Word Recovery</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="orbs" aria-hidden="true">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <h1 class="title">Word Recovery</h1>
+    <p class="tagline">Recover text from damaged, corrupted, or deleted Microsoft Word documents — entirely in your browser.</p>
+    <nav class="links">
+      <a href="https://github.com/socrtwo/wordrecovery-SF" target="_blank" rel="noopener">📂 Source</a>
+      <a href="https://github.com/socrtwo/wordrecovery-SF/releases" target="_blank" rel="noopener">⬇ Native apps</a>
+      <a href="https://github.com/socrtwo/wordrecovery-SF/issues" target="_blank" rel="noopener">💬 Issues</a>
+    </nav>
+  </header>
+
+  <section class="card drop" id="drop">
+    <div class="drop-inner">
+      <div class="drop-icon" aria-hidden="true">📄</div>
+      <h2>Drop a Word file here</h2>
+      <p>Or pick a file to begin. <code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.odt</code>, or any binary suspected of containing text.</p>
+      <label class="btn primary" for="file">
+        <input type="file" id="file" accept=".doc,.docx,.docm,.dot,.dotx,.rtf,.odt,.txt,.wps,.wpd,application/*" hidden>
+        <span>Choose file</span>
+      </label>
+      <p class="hint">All processing happens locally. Nothing is uploaded.</p>
+    </div>
+  </section>
+
+  <section class="card" id="status" hidden>
+    <h2 id="filename">file.docx</h2>
+    <p id="filemeta" class="muted"></p>
+    <div class="progress"><div id="progressBar"></div></div>
+    <p id="progressText" class="muted"></p>
+  </section>
+
+  <section class="card" id="results" hidden>
+    <div class="tabs" role="tablist">
+      <button role="tab" class="tab active" data-tab="recovered">Recovered text</button>
+      <button role="tab" class="tab" data-tab="methods">Methods used</button>
+      <button role="tab" class="tab" data-tab="raw">Raw extracts</button>
+      <button role="tab" class="tab" data-tab="manual">Manual recovery</button>
+    </div>
+
+    <div class="tab-panels">
+      <div class="panel active" data-panel="recovered">
+        <div class="row">
+          <div class="meta">
+            <span id="recoveredStats" class="muted">No text recovered yet.</span>
+          </div>
+          <div class="actions">
+            <button class="btn" id="copyBtn">Copy</button>
+            <button class="btn" id="downloadTxtBtn">Download .txt</button>
+            <button class="btn" id="downloadDocxBtn">Download .docx</button>
+          </div>
+        </div>
+        <textarea id="recoveredText" spellcheck="false" placeholder="Recovered text will appear here…"></textarea>
+      </div>
+
+      <div class="panel" data-panel="methods">
+        <ul id="methodsList" class="methods"></ul>
+      </div>
+
+      <div class="panel" data-panel="raw">
+        <p class="muted">Each method's individual output. Use these if the merged result looks wrong.</p>
+        <div id="rawList"></div>
+      </div>
+
+      <div class="panel" data-panel="manual">
+        <h3>If automated recovery couldn't find what you need…</h3>
+        <p class="muted">These are the platform-specific paths and procedures the original Word Recovery app provided. Pick your operating system below.</p>
+        <div class="os-tabs">
+          <button class="ostab active" data-os="windows">Windows</button>
+          <button class="ostab" data-os="macos">macOS</button>
+          <button class="ostab" data-os="linux">Linux</button>
+          <button class="ostab" data-os="ios">iOS / iPadOS</button>
+          <button class="ostab" data-os="android">Android</button>
+        </div>
+        <div id="manualContent"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card features">
+    <h2>What this does</h2>
+    <ul class="checklist">
+      <li><strong>Parse intact <code>.docx</code></strong> — extracts the document text from <code>word/document.xml</code> and from any embedded headers, footers, footnotes, endnotes, and comments.</li>
+      <li><strong>Repair partially-corrupt <code>.docx</code></strong> — locates the central directory and individual local file headers; recovers entries even if the archive's TOC is damaged.</li>
+      <li><strong>Salvage from raw <code>.doc</code> binaries</strong> — scans the OLE compound storage and pulls printable runs of text using both ASCII and UTF-16LE heuristics.</li>
+      <li><strong>RTF</strong> — strips control words and unescapes hex/Unicode runs.</li>
+      <li><strong>ODT</strong> — same ZIP+XML approach as <code>.docx</code> but on <code>content.xml</code>.</li>
+      <li><strong>Strings scan (last resort)</strong> — works on <em>any</em> file, including renamed temp files and recovered fragments from disk.</li>
+    </ul>
+    <p class="muted">All five methods run in parallel and the best result is shown first. Each method's output is also available individually.</p>
+  </section>
+
+  <footer>
+    <p>MIT-licensed · <a href="https://github.com/socrtwo/wordrecovery-SF" target="_blank" rel="noopener">socrtwo/wordrecovery-SF</a> · Originally migrated from SourceForge</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="./app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

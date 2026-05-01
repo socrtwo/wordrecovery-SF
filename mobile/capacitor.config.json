@@ -1,0 +1,15 @@
+{
+  "appId": "com.socrtwo.wordrecovery",
+  "appName": "Word Recovery",
+  "webDir": "../web",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

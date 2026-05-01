@@ -1,95 +1,128 @@
-<!--MODERNIZED:v1-->
-# Wordrecovery
+<!--MODERNIZED:v3.1-->
+# Word Recovery
 
-> Migrated from SourceForge via SF2GH Migrator
+> Recover text from damaged, corrupted, or deleted Microsoft Word documents.
+> Modernized, multi-platform rebuild of the original SourceForge project.
 
-[![Live page](https://img.shields.io/badge/live-page-ff2e93?style=for-the-badge)](https://socrtwo.github.io/wordrecovery-SF/)
+[![Live web app](https://img.shields.io/badge/web%20app-live-ff2e93?style=for-the-badge)](https://socrtwo.github.io/wordrecovery-SF/)
 [![Releases](https://img.shields.io/github/v/release/socrtwo/wordrecovery-SF?style=for-the-badge&color=7c3aed)](https://github.com/socrtwo/wordrecovery-SF/releases)
 [![License](https://img.shields.io/github/license/socrtwo/wordrecovery-SF?style=for-the-badge&color=22d3ee)](https://github.com/socrtwo/wordrecovery-SF/blob/main/LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/socrtwo/wordrecovery-SF?style=for-the-badge&color=34d399)](https://github.com/socrtwo/wordrecovery-SF/commits)
 
-🌐 **Live:** https://socrtwo.github.io/wordrecovery-SF/  
-📦 **Downloads:** [Releases](https://github.com/socrtwo/wordrecovery-SF/releases)  
+🌐 **Live web app:** <https://socrtwo.github.io/wordrecovery-SF/>
+📦 **Native installers:** [Releases](https://github.com/socrtwo/wordrecovery-SF/releases)
 📂 **Source:** [socrtwo/wordrecovery-SF](https://github.com/socrtwo/wordrecovery-SF)
 
 ---
 
-Provides buttons for all Microsoft-recommended Word document recovery methods plus 5 independent techniques. Includes previous-version recovery and temporary/deleted file finder.
+## What it does
 
-## Screenshots
+Open a `.docx`, `.doc`, `.rtf`, `.odt`, a renamed temp file, or any blob of bytes you suspect has Word text inside, and the app runs five recovery methods in parallel and shows the best result. Everything happens locally — nothing is uploaded.
 
-Visit the [SourceForge project page](https://sourceforge.net/projects/wordrecovery/) to view screenshots.
+## Platforms
 
-> **Tip:** If you have screenshots to contribute, open a PR adding them to a `screenshots/` folder!
+| Platform | Format | Where to get it |
+|----------|--------|-----------------|
+| **Web (PWA)** | Browser, installable | <https://socrtwo.github.io/wordrecovery-SF/> |
+| **Windows** | `.msi` and `.exe` (NSIS) | Releases page |
+| **macOS** | `.dmg` (Intel + Apple Silicon) | Releases page |
+| **Linux** | `.AppImage`, `.deb`, `.rpm` | Releases page |
+| **Android** | `.apk` | Releases page |
+| **iOS** | unsigned `.ipa` (sideload via Xcode/AltStore) | Releases page |
 
-**Language:** VB.NET / C#  
-**License:** MIT
+The desktop builds wrap the same web frontend with [Tauri 2](https://tauri.app); mobile builds wrap it with [Capacitor 6](https://capacitorjs.com).
 
-## Features
+## How it works
 
-- All Microsoft-recommended Word recovery methods in one interface
-- 5 additional independent recovery algorithms
-- Previous version recovery (Windows Shadow Copies)
-- Temporary and deleted file finder
-- Works with both .doc and .docx formats
+The recovery engine ([`web/app.js`](web/app.js)) runs **five independent methods** and ranks the results by quality:
 
-## System Requirements
+1. **Standard parse (JSZip).** Treats the file as a normal Office package and extracts text from `word/document.xml`.
+2. **Byte-level ZIP recovery.** Walks the file looking for `PK\x03\x04` local file headers, ignoring the central directory entirely (which may be corrupt). Each entry is decompressed with a brute-force shift sweep (offsets 0..47) using the **ImmortalInflate** decoder ported from [socrtwo/Universal-File-Repair-Tool](https://github.com/socrtwo/Universal-File-Repair-Tool) — a never-throws DEFLATE implementation that returns whatever bytes it managed to decode before hitting bad data.
+3. **DOCX XML tag fixes.** Applies the original SourceForge tool's `InvalidTags` → `ValidTags` substitutions to `word/document.xml`:
+   - `mc:AlternateContent` / `mc:Choice` reordering for `wps`/`wpg`/`wpi`/`wpc`
+   - `<m:oMath>` namespace repair
+   - vshape / vtextbox unwrapping
+   - Stripping broken `<mc:Fallback><w:pict/>` blocks
+4. **RTF stripping.** Removes control words, unescapes `\'hh` and `\uN` runs, normalises `\par` / `\line` / `\tab`.
+5. **Strings scan.** Last-resort scan over raw bytes for runs of printable ASCII and UTF-16LE — works on `.doc` binaries, renamed temp files, fragments dug up by `photorec`, etc.
 
-- Windows 7 or later
-- Visual Studio 2010+ (Community edition works)
-- .NET Framework 4.0 or later
+The app also produces a **fresh, valid `.docx`** built from whatever Method 2 recovered, with a clean `[Content_Types].xml` / `_rels` and the repaired `word/document.xml` swapped in.
 
-## Installation & Usage
+The **Manual recovery** tab replicates the original tool's per-OS instructions: AutoRecover paths, Previous Versions / Shadow Copies, Time Machine, Word's *Open and Repair* and *Recover Text from Any File*, and the deleted-file recovery utilities (Recuva, PhotoRec, Sleuth Kit, ShadowExplorer).
 
-### Building from Source
+### Verified
 
-1. Open the `.sln` file in Visual Studio
-2. Restore NuGet packages if prompted
-3. Build the solution (**Build → Build Solution** or `Ctrl+Shift+B`)
-4. Find the compiled `.exe` in `bin/Release/`
+The engine has been smoke-tested against a known-corrupt `.docx` whose `word/document.xml` deflate stream is broken (standard `unzip` fails with *invalid compressed data to inflate*). Method 2 recovered all 12 archive entries (`word/document.xml` as a partial), and text extraction produced ~5 KB of coherent document text from the recovered XML.
 
-### Using a Pre-built Release
+## Building locally
 
-Download the latest release from the [Releases](../../releases) page and run the `.exe` directly — no install needed.
+### Web (no build step)
+
+Just serve `web/`:
+
+```bash
+cd web
+python3 -m http.server 8080
+# open http://localhost:8080/
+```
+
+### Desktop (Tauri 2)
+
+Requires Rust + platform toolchains. See <https://tauri.app/v2/guides/prerequisites/>.
+
+```bash
+cd src-tauri
+cargo install tauri-cli --version '^2.0.0' --locked
+cargo tauri dev          # hot-reload dev window
+cargo tauri build        # native installers in src-tauri/target/release/bundle/
+```
+
+### Mobile (Capacitor 6)
+
+```bash
+cd mobile
+npm install
+npx cap add android      # one-time
+npx cap add ios          # one-time, macOS only
+npx cap sync
+npx cap run android      # or: open android
+npx cap run ios          # or: open ios
+```
+
+See [`mobile/README.md`](mobile/README.md) for more.
+
+## CI / releases
+
+Pushing a tag like `v3.1.0` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml) which builds installers for all six targets and attaches them to the GitHub release. The PWA at <https://socrtwo.github.io/wordrecovery-SF/> redeploys automatically from the existing [`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push to `main`.
+
+## Repository layout
+
+```
+web/                modern web app (deployed to GitHub Pages, also wraps as PWA)
+  index.html
+  app.js            recovery engine
+  styles.css
+  manifest.webmanifest, sw.js, icons/
+socrtwo/socrtwo/    mirror copy of the web app at the user-requested path
+src-tauri/          Tauri 2 desktop wrapper (Win / macOS / Linux)
+mobile/             Capacitor wrapper (Android / iOS)
+.github/workflows/  pages deploy + multi-platform release
+```
 
 ## Origin
 
-This project was originally hosted on SourceForge and has been migrated to GitHub for easier access and collaboration.
+This project was originally hosted on SourceForge as *Word Recovery* (the C# WinForms project `DocCorruptionChecker`) and migrated to GitHub. The 3.x rewrite preserves the original tool's actual repair algorithms — the `InvalidTags` / `ValidTags` substitutions for `word/document.xml`, AutoRecover-path lookups, and the link aggregation to other recovery utilities — and pairs them with the **Universal-File-Repair-Tool**'s byte-level ZIP scanner so a single web app can repair `.docx` files whose deflate streams are damaged.
 
-- **SourceForge:** [wordrecovery](https://sourceforge.net/projects/wordrecovery/)
+- **Original SourceForge:** <https://sourceforge.net/projects/wordrecovery/>
+- **Universal-File-Repair-Tool:** <https://github.com/socrtwo/Universal-File-Repair-Tool>
 - **Migrated with:** [SF2GH Migrator](https://github.com/socrtwo/sf-to-github)
 
 ## Contributing
 
-Contributions are welcome! Feel free to:
-
-1. Fork this repository
-2. Create a feature branch (`git checkout -b my-feature`)
-3. Commit your changes (`git commit -m "Add my feature"`)
-4. Push to the branch (`git push origin my-feature`)
-5. Open a Pull Request
+Issues and pull requests welcome at <https://github.com/socrtwo/wordrecovery-SF/issues>. The web app is plain HTML / JS — no build step — so just edit `web/app.js` and refresh.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## 📜 SourceForge heritage
-
-This project originated on **SourceForge** before being migrated to GitHub. The legacy SourceForge entry, if still available, can be searched at:
-
-🔗 https://sourceforge.net/projects/wordrecovery/
-
-The repository here at `socrtwo/wordrecovery-SF` is the canonical, actively-maintained home. All future updates, issue tracking, and releases happen on GitHub.
-
-## 🛠️ Contributing
-
-Issues and pull requests are welcome at [https://github.com/socrtwo/wordrecovery-SF/issues](https://github.com/socrtwo/wordrecovery-SF/issues).
-
-## 📝 License
-
-See the [LICENSE](https://github.com/socrtwo/wordrecovery-SF/blob/main/LICENSE) file in this repository. If no license file is present, the project is shared as-is for reference and personal use; please contact the maintainer for other use cases.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
