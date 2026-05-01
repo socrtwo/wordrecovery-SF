@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Word Recovery",
+  "version": "3.1.0",
+  "identifier": "com.socrtwo.wordrecovery",
+  "build": {
+    "frontendDist": "../web",
+    "beforeBuildCommand": "",
+    "beforeDevCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Word Recovery",
+        "width": 1100,
+        "height": 800,
+        "minWidth": 720,
+        "minHeight": 520,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Productivity",
+    "shortDescription": "Recover text from damaged Microsoft Word documents",
+    "longDescription": "Recover text from damaged, corrupted, or deleted Microsoft Word documents. Includes byte-level ZIP recovery, the original SourceForge tool's DOCX XML tag fixes, RTF stripping, and binary strings extraction.",
+    "publisher": "socrtwo",
+    "copyright": "MIT",
+    "license": "MIT",
+    "homepage": "https://github.com/socrtwo/wordrecovery-SF",
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
+    "windows": {
+      "wix": { "language": ["en-US"] },
+      "nsis": {}
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "linux": {
+      "deb": { "depends": [] },
+      "appimage": { "bundleMediaFramework": false }
+    }
+  },
+  "plugins": {
+    "fs": { "scope": ["$HOME/**", "$DOWNLOAD/**", "$DOCUMENT/**"] },
+    "dialog": {}
+  }
+}
