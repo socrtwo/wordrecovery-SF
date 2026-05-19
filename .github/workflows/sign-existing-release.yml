@@ -1,0 +1,55 @@
+name: Sign existing release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag whose Windows assets to sign (e.g. v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  sign:
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows assets from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path assets -Force | Out-Null
+          gh release download "${{ github.event.inputs.tag }}" `
+            --repo "${{ github.repository }}" `
+            --pattern "*.exe" --pattern "*.msi" --pattern "*.dll" `
+            --dir assets --clobber
+          Get-ChildItem assets
+
+      - name: Sign Windows binaries (Azure Trusted Signing)
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
+          files-folder: assets
+          files-folder-filter: exe,msi,dll
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Re-upload signed assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          Get-ChildItem assets -File | ForEach-Object {
+            gh release upload "${{ github.event.inputs.tag }}" $_.FullName `
+              --repo "${{ github.repository }}" --clobber
+          }
