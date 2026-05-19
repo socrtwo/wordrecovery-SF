@@ -8,7 +8,11 @@ on:
     inputs:
       tag:
         description: 'Tag to release (e.g. v3.1.0)'
-        required: true
+        required: false
+      ref:
+        description: 'Ref (tag/branch) to checkout and release from (e.g. v3.1.0)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -19,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - name: Package web/
         run: |
           set -e
@@ -26,8 +32,8 @@ jobs:
           ls -la wordrecovery-web.zip
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
           files: wordrecovery-web.zip
           fail_on_unmatched_files: false
 
@@ -41,11 +47,11 @@ jobs:
             target: linux
           - os: macos-latest
             target: macos
-          - os: windows-latest
-            target: windows
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - name: Install Linux build deps
         if: matrix.target == 'linux'
         run: |
@@ -59,12 +65,65 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: ${{ github.ref_name || inputs.tag }}
+          tagName: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          releaseName: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
           releaseDraft: false
           prerelease: false
           projectPath: src-tauri
           args: ''
+
+  desktop-windows:
+    name: Desktop (windows-latest, signed)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Build Windows bundles (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: src-tauri
+          args: ''
+      - name: Stage Windows artifacts for signing
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path _signed | Out-Null
+          $bundleDir = "src-tauri/target/release/bundle"
+          Get-ChildItem -Path $bundleDir -Recurse -Include *.exe,*.msi -File | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination _signed/ -Force
+          }
+          Get-ChildItem _signed
+      # Sign the top-level .exe and .msi with Azure Trusted Signing before upload.
+      - name: Sign Windows binaries (Azure Trusted Signing)
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
+          files-folder: _signed
+          files-folder-filter: exe,msi,dll
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      - name: Upload signed Windows artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          files: |
+            _signed/*.exe
+            _signed/*.msi
+          fail_on_unmatched_files: false
 
   android:
     name: Android (APK)
@@ -72,6 +131,8 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -99,8 +160,8 @@ jobs:
           ls -la _out/
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
           files: _out/*.apk
           fail_on_unmatched_files: false
 
@@ -110,6 +171,8 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -130,7 +193,7 @@ jobs:
           cd build && zip -r WordRecovery-unsigned.ipa Payload
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
+          name: ${{ github.event.inputs.ref || github.ref_name || inputs.tag }}
           files: mobile/ios/App/build/WordRecovery-unsigned.ipa
           fail_on_unmatched_files: false
