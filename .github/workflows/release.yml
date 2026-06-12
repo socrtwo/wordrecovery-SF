@@ -27,7 +27,7 @@ jobs:
       - name: Package ChromeOS zip (web payload + INSTALL.md)
         run: |
           set -e
-          TAG="${{ github.ref_name || inputs.tag }}"
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
           rm -rf stage-chromeos
           mkdir -p stage-chromeos
           cp -r web/. stage-chromeos/
@@ -55,8 +55,8 @@ jobs:
           ls -la wordrecovery-chromeos-*.zip
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           files: |
             wordrecovery-web.zip
             wordrecovery-chromeos-*.zip
@@ -90,8 +90,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: ${{ github.ref_name || inputs.tag }}
+          tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseDraft: false
           prerelease: false
           projectPath: src-tauri
@@ -130,8 +130,8 @@ jobs:
           ls -la _out/
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           files: _out/*.apk
           fail_on_unmatched_files: false
 
@@ -161,7 +161,7 @@ jobs:
           cd build && zip -r WordRecovery-unsigned.ipa Payload
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           files: mobile/ios/App/build/WordRecovery-unsigned.ipa
           fail_on_unmatched_files: false
