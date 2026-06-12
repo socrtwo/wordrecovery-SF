@@ -24,11 +24,42 @@ jobs:
           set -e
           cd web && zip -r ../wordrecovery-web.zip . && cd ..
           ls -la wordrecovery-web.zip
+      - name: Package ChromeOS zip (web payload + INSTALL.md)
+        run: |
+          set -e
+          TAG="${{ github.ref_name || inputs.tag }}"
+          rm -rf stage-chromeos
+          mkdir -p stage-chromeos
+          cp -r web/. stage-chromeos/
+          printf '%s\n' \
+            "# Word Recovery $TAG — ChromeOS" \
+            '' \
+            '## Easiest: install the web app (PWA)' \
+            '' \
+            '1. Open https://socrtwo.github.io/wordrecovery-SF/ in Chrome on your Chromebook.' \
+            '2. Click the install icon in the address bar ("Install app").' \
+            '3. The app appears in the ChromeOS launcher — pin it to the shelf if you like.' \
+            '' \
+            '## Or: run the Linux desktop app' \
+            '' \
+            'If your Chromebook has Linux (Crostini) enabled (Settings -> About ChromeOS -> Linux development environment):' \
+            '' \
+            '1. Download the .deb file from this same release page and double-click it in the Files app to install.' \
+            '2. Or download the .AppImage, then in the Linux terminal run: chmod +x *.AppImage && ./*.AppImage' \
+            '' \
+            '## Offline / self-hosted' \
+            '' \
+            '- This zip contains the same web app the hosted page serves. Open index.html in Chrome, or host the folder on any static web server.' \
+            > stage-chromeos/INSTALL.md
+          cd stage-chromeos && zip -r "../wordrecovery-chromeos-${TAG}.zip" . && cd ..
+          ls -la wordrecovery-chromeos-*.zip
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name || inputs.tag }}
           name: ${{ github.ref_name || inputs.tag }}
-          files: wordrecovery-web.zip
+          files: |
+            wordrecovery-web.zip
+            wordrecovery-chromeos-*.zip
           fail_on_unmatched_files: false
 
   desktop:
