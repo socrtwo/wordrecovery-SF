@@ -32,6 +32,43 @@ jobs:
           files: wordrecovery-web.zip
           fail_on_unmatched_files: false
 
+  chromeos:
+    name: ChromeOS (PWA zip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package web/ as ChromeOS PWA bundle
+        run: |
+          set -e
+          rm -rf _chromeos && mkdir -p _chromeos/app
+          cp -r web/. _chromeos/app/
+          {
+            echo "# Word Recovery - ChromeOS"
+            echo
+            echo "ChromeOS treats PWAs as first-class apps; no APK or extension is needed."
+            echo
+            echo "## Install (recommended)"
+            echo "1. Open the hosted app in Chrome on your Chromebook."
+            echo "2. Click the install icon in the address bar (or the menu -> \"Install\")."
+            echo "3. The app appears in your launcher and works offline."
+            echo
+            echo "## Run from this bundle (offline)"
+            echo "1. Unzip into Files -> My files."
+            echo "2. Open app/index.html in Chrome."
+            echo
+            echo "## Sideload the Android APK (optional)"
+            echo "Chromebooks with Play Store support can install the Android APK"
+            echo "from this same release instead."
+          } > _chromeos/INSTALL-CHROMEOS.md
+          cd _chromeos && zip -r ../wordrecovery-chromeos.zip . && cd ..
+          ls -la wordrecovery-chromeos.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          name: ${{ github.ref_name || inputs.tag }}
+          files: wordrecovery-chromeos.zip
+          fail_on_unmatched_files: false
+
   desktop:
     name: Desktop (${{ matrix.os }})
     strategy:
