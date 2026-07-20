@@ -27,8 +27,8 @@ jobs:
           ls -la wordrecovery-web.zip
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: ${{ inputs.tag || github.ref_name }}
           files: wordrecovery-web.zip
           fail_on_unmatched_files: false
 
@@ -64,8 +64,8 @@ jobs:
           ls -la wordrecovery-chromeos.zip
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: ${{ inputs.tag || github.ref_name }}
           files: wordrecovery-chromeos.zip
           fail_on_unmatched_files: false
 
@@ -98,8 +98,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: ${{ github.ref_name || inputs.tag }}
+          tagName: ${{ inputs.tag || github.ref_name }}
+          releaseName: ${{ inputs.tag || github.ref_name }}
           releaseDraft: false
           prerelease: false
           projectPath: src-tauri
@@ -158,8 +158,8 @@ jobs:
           ls -la _out/
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: ${{ inputs.tag || github.ref_name }}
           files: _out/*.apk
           fail_on_unmatched_files: false
 
@@ -189,7 +189,7 @@ jobs:
           cd build && zip -r WordRecovery-unsigned.ipa Payload
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: ${{ inputs.tag || github.ref_name }}
           files: mobile/ios/App/build/WordRecovery-unsigned.ipa
           fail_on_unmatched_files: false
