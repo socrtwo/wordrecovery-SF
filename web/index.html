@@ -47,6 +47,8 @@
     <p id="progressText" class="muted"></p>
   </section>
 
+  <section class="card" id="fileIdPanel" hidden></section>
+
   <section class="card" id="results" hidden>
     <div class="tabs" role="tablist">
       <button role="tab" class="tab active" data-tab="recovered">Recovered text</button>
@@ -113,6 +115,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="./s2-file-id.js"></script>
 <script src="./app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
