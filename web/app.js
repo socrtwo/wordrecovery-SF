@@ -497,10 +497,8 @@ async function buildRepairedDocx(method2Files, fixedDocXml, recoveredText) {
 // ============================================================================
 // Main pipeline
 // ============================================================================
-async function recoverFile(file) {
-  const buf = await file.arrayBuffer();
-  const u8 = new Uint8Array(buf);
-  const ext = (file.name.split('.').pop() || '').toLowerCase();
+async function recoverFile(u8, fileName) {
+  const ext = (fileName.split('.').pop() || '').toLowerCase();
   const results = {
     methods: [],
     raws: [],
@@ -766,10 +764,26 @@ async function handleFile(file) {
   $('#filemeta').textContent = `${fmtBytes(file.size)} · ${file.type || 'unknown type'}`;
   setProgress(10, 'Reading file…');
 
+  // First step: S2 File Identifier — magic-number identification and
+  // separation of any embedded/concatenated foreign files, before repair.
+  const rawU8 = new Uint8Array(state.currentFileBuf);
+  let repairU8 = rawU8;
+  const idPanel = $('#fileIdPanel');
+  if (idPanel) idPanel.hidden = true;
+  if (typeof S2FileID !== 'undefined' && idPanel) {
+    setProgress(20, 'Identifying file type…');
+    try {
+      const report = S2FileID.analyze(rawU8, { programKey: 'wordrecovery', fileName: file.name });
+      S2FileID.renderPanel(idPanel, report);
+      idPanel.hidden = false;
+      if (report.proceedBytes && report.proceedBytes.length) repairU8 = report.proceedBytes;
+    } catch (e) { /* identification is best-effort; recovery continues on raw bytes */ }
+  }
+
   setProgress(30, 'Running recovery methods…');
   let results;
   try {
-    results = await recoverFile(file);
+    results = await recoverFile(repairU8, file.name);
   } catch (e) {
     setProgress(0, `Error: ${e.message || e}`);
     return;

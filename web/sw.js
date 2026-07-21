@@ -1,10 +1,11 @@
 'use strict';
 
-const CACHE = 'wordrec-v1';
+const CACHE = 'wordrec-v2';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
+  './s2-file-id.js',
   './styles.css',
   './manifest.webmanifest',
   './icons/icon.svg',
